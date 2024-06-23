@@ -17,6 +17,10 @@ label{
   @apply text-blue-900;
 
 }
+.btn-red{
+  @apply bg-red-900 text-white px-4 py-2 rounded-md mt-4;
+
+}
 .btn-primary{
   @apply bg-blue-900 text-white px-4 py-2 rounded-md mt-4;
 }

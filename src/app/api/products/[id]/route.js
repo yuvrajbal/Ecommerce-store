@@ -41,3 +41,22 @@ export async function PUT(req, { params }) {
     );
   }
 }
+
+// Named export for the DELETE method
+export async function DELETE(req, { params }) {
+  try {
+    await mongooseConnect();
+    const { id } = params;
+    const deletedProduct = await Product.findByIdAndDelete(id);
+
+    if (!deletedProduct) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+    return NextResponse.json({ message: "Product deleted successfully" });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "An error occurred while deleting the product." },
+      { status: 500 }
+    );
+  }
+}
