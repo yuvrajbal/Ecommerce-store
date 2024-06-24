@@ -16,51 +16,50 @@ export default function ProductForm({
   const [price, setPrice] = useState(existingPrice || "");
   const [goToProducts, setgoToProducts] = useState(false);
   const [images, setImages] = useState(existingImages || []);
-  // console.log({ _id });
-
+  const [deleting, setDeleting] = useState(false);
   const router = useRouter();
+
+  async function handleImageDelete(imageUrl) {
+    setDeleting(true);
+    const imageKey = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
+
+    try {
+      const response = await axios.post("/api/uploadthing/delete", {
+        key: imageKey,
+      });
+      if (response.data.success) {
+        setImages(images.filter((image) => image !== imageUrl));
+      }
+    } catch (error) {
+      console.error("An error occurred while deleting the image:", error);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function createProduct(event) {
     event.preventDefault();
     try {
-      const data = { title, description, price };
+      const data = { title, description, price, images };
+
       if (_id) {
         // Update the existing product
-        await axios.put("/api/products/" + _id, { ...data, _id });
+        await axios.put("/api/products/" + _id, data);
       } else {
         // Create a new product
         await axios.post("/api/products", data);
       }
+      console.log("data that is sent in req", data);
       setTitle("");
       setDescription("");
       setPrice("");
+      setImages([]);
       setgoToProducts(true);
     } catch (error) {
       console.error("An error occurred while creating the product:", error);
     }
   }
 
-  function uploadImages(event) {
-    const files = event.target?.files;
-    if (files.length > 0) {
-      const formData = new FormData();
-      for (let i = 0; i < files.length; i++) {
-        formData.append("images", files[i]);
-      }
-      try {
-        axios
-          .post("/api/products/upload", formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          })
-          .then((response) => {
-            console.log("response from server", response.data);
-            setImages(response.data.files);
-          });
-      } catch (error) {
-        console.error("An error occurred while uploading the images:", error);
-      }
-    }
-  }
   useEffect(() => {
     if (goToProducts) {
       router.push("/products");
@@ -69,7 +68,7 @@ export default function ProductForm({
 
   return (
     <form onSubmit={createProduct}>
-      <div className="flex flex-col max-w-sm">
+      <div className="flex flex-col  max-w-sm">
         <label>Product name</label>
         <input
           type="text"
@@ -77,53 +76,65 @@ export default function ProductForm({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-
         <label> Photos</label>
-        <div className="mb-2">
-          {/* <label className="flex  items-center justify-center text-center size-24 border text-gray-500 bg-gray-50 rounded-lg text-sm cursor-pointer">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="size-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
-              />
-            </svg>
-            Upload
-            <input
-              type="file"
-              className="hidden"
-              onChange={uploadImages}
-              multiple
-            />
-          </label> */}
-          <UploadButton
-            endpoint="imageUploader"
-            onClientUploadComplete={(res) => {
-              // Do something with the response
-              console.log("Files: ", res);
-              alert("Upload Completed");
-            }}
-            onUploadError={(error) => {
-              // Do something with the error.
-              alert(`ERROR! ${error.message}`);
-            }}
-          />
+        <div className="mb-2 flex flex-wrap gap-2">
+          {images && images.length > 0 ? (
+            images.map((image, index) => (
+              <div>
+                <img
+                  key={index}
+                  src={image.url || image}
+                  alt="product image"
+                  className="size-20 object-cover rounded-lg"
+                />
+                <button>
+                  <svg
+                    onClick={() => handleImageDelete(image.url || image)}
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="size-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-gray-600">No images uploaded</p>
+          )}
         </div>
+        <UploadButton
+          endpoint="imageUploader"
+          className="mt-6"
+          onClientUploadComplete={(res) => {
+            // Do something with the response
 
+            // console.log("Files: ", res);
+
+            const newImageURLs = res.map((file) => file.url);
+            setImages([...images, ...newImageURLs]);
+            alert("Upload Completed");
+          }}
+          onUploadError={(error) => {
+            // Do something with the error.
+            alert(`ERROR! ${error.message}`);
+          }}
+        />
+
+        {console.log("images", images)}
         <label>Description</label>
         <textarea
           placeholder="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-
         <label>Price </label>
         <input
           type="text"

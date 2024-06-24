@@ -23,10 +23,10 @@ export async function PUT(req, { params }) {
   try {
     await mongooseConnect();
     const { id } = params;
-    const { title, description, price } = await req.json();
+    const { title, description, price, images } = await req.json();
     const updateProduct = await Product.findByIdAndUpdate(
       id,
-      { title, description, price },
+      { title, description, price, images },
       { new: true }
     );
 

@@ -13,7 +13,7 @@ export default function Editproduct({ params }) {
       setProduct(response.data);
     });
   });
-
+  console.log("product", { product });
   return (
     <Container>
       <h1>Edit Product {id}</h1>
@@ -23,6 +23,7 @@ export default function Editproduct({ params }) {
           title={product.title}
           description={product.description}
           price={product.price}
+          images={product.images}
         />
       )}
     </Container>
