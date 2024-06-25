@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { UploadButton } from "./uploadthing";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function ProductForm({
   _id,
@@ -16,11 +18,28 @@ export default function ProductForm({
   const [price, setPrice] = useState(existingPrice || "");
   const [goToProducts, setgoToProducts] = useState(false);
   const [images, setImages] = useState(existingImages || []);
-  const [deleting, setDeleting] = useState(false);
+  const [isLoading, setisLoading] = useState(false);
+  const [saveStatus, setsaveStatus] = useState("Save");
+  const [isFormModified, setIsFormModified] = useState(false);
   const router = useRouter();
 
+  const [initialFormValues, setInitialFormValues] = useState({
+    title: existingTitle || "",
+    description: existingDescription || "",
+    price: existingPrice || "",
+    images: existingImages || [],
+  });
+
+  useEffect(() => {
+    setInitialFormValues({
+      title: existingTitle || "",
+      description: existingDescription || "",
+      price: existingPrice || "",
+      images: existingImages || [],
+    });
+  }, [existingTitle, existingDescription, existingPrice, existingImages]);
+
   async function handleImageDelete(imageUrl) {
-    setDeleting(true);
     const imageKey = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
 
     try {
@@ -29,17 +48,23 @@ export default function ProductForm({
       });
       if (response.data.success) {
         setImages(images.filter((image) => image !== imageUrl));
+        // setIsFormModified(true);
       }
     } catch (error) {
       console.error("An error occurred while deleting the image:", error);
-    } finally {
-      setDeleting(false);
     }
   }
 
   async function createProduct(event) {
     event.preventDefault();
+    if (!isFormModified) {
+      return;
+    }
+
+    setisLoading(true);
+
     try {
+      // console.log("images updated to before sending", images);
       const data = { title, description, price, images };
 
       if (_id) {
@@ -49,25 +74,39 @@ export default function ProductForm({
         // Create a new product
         await axios.post("/api/products", data);
       }
-      console.log("data that is sent in req", data);
-      setTitle("");
-      setDescription("");
-      setPrice("");
-      setImages([]);
-      setgoToProducts(true);
+      // console.log("data that is sent in req", data);
+
+      setInitialFormValues({ ...data });
+      setIsFormModified(false);
+      setsaveStatus("Saved");
+      toast.success("Product saved successfully");
     } catch (error) {
       console.error("An error occurred while creating the product:", error);
+      toast.error("An error occurred while creating the product");
+    } finally {
+      setisLoading(false);
     }
   }
 
   useEffect(() => {
-    if (goToProducts) {
-      router.push("/products");
+    setIsFormModified(
+      title !== initialFormValues.title ||
+        description !== initialFormValues.description ||
+        price !== initialFormValues.price ||
+        images.length !== initialFormValues.images.length ||
+        images.some((image, index) => image !== initialFormValues.images[index])
+    );
+  }, [title, description, price, images]);
+
+  useEffect(() => {
+    if (isFormModified) {
+      setsaveStatus("Save");
     }
-  }, [goToProducts, router]);
+  }, [isFormModified]);
 
   return (
     <form onSubmit={createProduct}>
+      <ToastContainer autoClose={2000} theme="dark" pauseOnHover={false} />
       <div className="flex flex-col  max-w-sm">
         <label>Product name</label>
         <input
@@ -77,56 +116,59 @@ export default function ProductForm({
           onChange={(e) => setTitle(e.target.value)}
         />
         <label> Photos</label>
-        <div className="mb-2 flex flex-wrap gap-2">
-          {images && images.length > 0 ? (
-            images.map((image, index) => (
-              <div>
-                <img
-                  key={index}
-                  src={image.url || image}
-                  alt="product image"
-                  className="size-20 object-cover rounded-lg"
-                />
-                <button>
-                  <svg
+        <div className="mb-2 ">
+          <div className="flex flex-row flex-wrap gap-2">
+            {images && images.length > 0 ? (
+              images.map((image, index) => (
+                <div className="relative h-24 mb-4">
+                  <img
+                    key={index}
+                    src={image.url || image}
+                    alt="product image"
+                    className="object-cover rounded-2xl mt-3  mr-2"
+                  />
+                  <button
+                    type="button"
+                    className="absolute top-0 right-0 bg-red-400 text-white rounded-full p-0.2 size-6"
                     onClick={() => handleImageDelete(image.url || image)}
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="size-6"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                    />
-                  </svg>
-                </button>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-gray-600">No images uploaded</p>
-          )}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="size-6"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-gray-600">No images uploaded</p>
+            )}
+          </div>
         </div>
+
         <UploadButton
           endpoint="imageUploader"
-          className="mt-6"
+          className="mt-6 ut-button:bg-blue-900"
           onClientUploadComplete={(res) => {
-            // Do something with the response
-
-            // console.log("Files: ", res);
-
             const newImageURLs = res.map((file) => file.url);
             setImages([...images, ...newImageURLs]);
-            alert("Upload Completed");
+            setIsFormModified(true);
+            // alert("Upload Completed");
           }}
           onUploadError={(error) => {
             // Do something with the error.
             alert(`ERROR! ${error.message}`);
           }}
-        />
+        ></UploadButton>
 
         {console.log("images", images)}
         <label>Description</label>
@@ -143,7 +185,7 @@ export default function ProductForm({
           onChange={(e) => setPrice(e.target.value)}
         />
         <button className="btn-primary" type="submit">
-          Save
+          {saveStatus}
         </button>
       </div>
     </form>

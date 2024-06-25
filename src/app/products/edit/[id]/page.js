@@ -16,7 +16,7 @@ export default function Editproduct({ params }) {
   console.log("product", { product });
   return (
     <Container>
-      <h1>Edit Product {id}</h1>
+      <h1>Edit Product {product?.title}</h1>
       {product && (
         <ProductForm
           _id={product._id}

@@ -10,16 +10,16 @@ export async function POST(req) {
   try {
     const res = await utapi.deleteFiles(key);
 
-    const updatedProduct = await Product.findOneAndUpdate(
-      { images: { $in: [imageURL] } },
-      { $pull: { images: imageURL } },
-      { new: true }
-    );
-    if (!updatedProduct) {
-      throw new Error(
-        "Product not found or image URL not in product's images array"
-      );
-    }
+    // const updatedProduct = await Product.findOneAndUpdate(
+    //   { images: { $in: [imageURL] } },
+    //   { $pull: { images: imageURL } },
+    //   { new: true }
+    // );
+    // if (!updatedProduct) {
+    //   throw new Error(
+    //     "Product not found or image URL not in product's images array"
+    //   );
+    // }
     return NextResponse.json(res);
   } catch (error) {
     console.error(error);
