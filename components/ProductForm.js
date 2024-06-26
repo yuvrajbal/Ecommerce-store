@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { UploadButton } from "./uploadthing";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { DragControls, Reorder, useDragControls } from "framer-motion";
 
 export default function ProductForm({
   _id,
@@ -22,6 +23,8 @@ export default function ProductForm({
   const [saveStatus, setsaveStatus] = useState("Save");
   const [isFormModified, setIsFormModified] = useState(false);
   const router = useRouter();
+
+  const dragControls = useDragControls();
 
   const [initialFormValues, setInitialFormValues] = useState({
     title: existingTitle || "",
@@ -79,14 +82,20 @@ export default function ProductForm({
       setInitialFormValues({ ...data });
       setIsFormModified(false);
       setsaveStatus("Saved");
-      toast.success("Product saved successfully");
+      toast.success("Product saved successfully", { position: "bottom-right" });
     } catch (error) {
       console.error("An error occurred while creating the product:", error);
-      toast.error("An error occurred while creating the product");
+      toast.error("An error occurred while creating the product", {
+        position: "bottom-right",
+      });
     } finally {
       setisLoading(false);
     }
   }
+
+  const startDrag = (e) => {
+    dragControls.start(e);
+  };
 
   useEffect(() => {
     setIsFormModified(
@@ -117,41 +126,60 @@ export default function ProductForm({
         />
         <label> Photos</label>
         <div className="mb-2 ">
-          <div className="flex flex-row flex-wrap gap-2">
-            {images && images.length > 0 ? (
-              images.map((image, index) => (
-                <div className="relative h-24 mb-4">
-                  <img
-                    key={index}
-                    src={image.url || image}
-                    alt="product image"
-                    className="object-cover rounded-2xl mt-3  mr-2"
-                  />
-                  <button
-                    type="button"
-                    className="absolute top-0 right-0 bg-red-400 text-white rounded-full p-0.2 size-6"
-                    onClick={() => handleImageDelete(image.url || image)}
+          <div className="">
+            <Reorder.Group
+              axis="x"
+              values={images}
+              onReorder={setImages}
+              className="flex flex-row gap-1"
+              as="ul"
+            >
+              {images && images.length > 0 ? (
+                images.map((image, index) => (
+                  <Reorder.Item
+                    key={image}
+                    value={image}
+                    dragControls={dragControls}
+                    className="max-w-fit"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="size-6"
+                    <div
+                      className="relative h-24 mb-4  cursor-grab"
+                      onPointerDown={(e) => startDrag(e)}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                      <img
+                        key={index}
+                        src={image.url || image}
+                        alt="product image"
+                        className="object-cover rounded-2xl mt-3  mr-2 pointer-events-none text-sm"
                       />
-                    </svg>
-                  </button>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-gray-600">No images uploaded</p>
-            )}
+                      <h1>{image.url}</h1>
+                      <button
+                        type="button"
+                        className="absolute top-0 right-0 bg-red-400 text-white rounded-full p-0.2 size-6"
+                        onClick={() => handleImageDelete(image.url || image)}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="size-6"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </Reorder.Item>
+                ))
+              ) : (
+                <p className="text-sm text-gray-600">No images uploaded</p>
+              )}
+            </Reorder.Group>
           </div>
         </div>
 
