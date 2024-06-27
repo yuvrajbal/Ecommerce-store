@@ -32,3 +32,42 @@ export async function POST(req) {
     );
   }
 }
+export async function PUT(req) {
+  try {
+    await mongooseConnect();
+    const { _id, name, parentCategory } = await req.json();
+    const categoryDoc = await Category.findByIdAndUpdate(
+      _id,
+      { name, parent: parentCategory },
+      { new: true }
+    );
+    return NextResponse.json(categoryDoc, { status: 201 });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { error: "An error occurred while updating the category." },
+      { status: 500 }
+    );
+  }
+}
+export async function DELETE(req) {
+  try {
+    await mongooseConnect();
+    const url = new URL(req.url);
+    const _id = url.searchParams.get("_id");
+    const deletedCategory = await Category.findByIdAndDelete(_id);
+    if (!deletedCategory) {
+      return NextResponse.json(
+        { error: "Category not found" },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json({ message: "Category deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { error: "An error occurred while deleting the category." },
+      { status: 500 }
+    );
+  }
+}

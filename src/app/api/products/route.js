@@ -23,7 +23,7 @@ export async function POST(req) {
     await mongooseConnect();
 
     // Parse the request body
-    const { title, description, price, images } = await req.json();
+    const { title, description, price, images, category } = await req.json();
 
     // Create a new product document in the database
     const productDoc = await Product.create({
@@ -31,6 +31,7 @@ export async function POST(req) {
       description,
       price,
       images,
+      category,
     });
 
     // Respond with the created product document
@@ -49,10 +50,10 @@ export async function PUT(req, { params }) {
   try {
     await mongooseConnect();
     const { id } = params;
-    const { title, description, price, images } = await req.json();
+    const { title, description, price, images, category } = await req.json();
     const updateProduct = await Product.findByIdAndUpdate(
       id,
-      { title, description, price, images },
+      { title, description, price, images, category },
       { new: true }
     );
 

@@ -13,15 +13,18 @@ export default function ProductForm({
   description: existingDescription,
   price: existingPrice,
   images: existingImages,
+  category: existingCategory,
 }) {
   const [title, setTitle] = useState(existingTitle || "");
   const [description, setDescription] = useState(existingDescription || "");
   const [price, setPrice] = useState(existingPrice || "");
+  const [category, setCategory] = useState(existingCategory || "");
   const [goToProducts, setgoToProducts] = useState(false);
   const [images, setImages] = useState(existingImages || []);
   const [isLoading, setisLoading] = useState(false);
   const [saveStatus, setsaveStatus] = useState("Save");
   const [isFormModified, setIsFormModified] = useState(false);
+  const [categories, setCategories] = useState([]);
   const router = useRouter();
 
   const dragControls = useDragControls();
@@ -31,6 +34,7 @@ export default function ProductForm({
     description: existingDescription || "",
     price: existingPrice || "",
     images: existingImages || [],
+    category: existingCategory || "",
   });
 
   useEffect(() => {
@@ -39,8 +43,15 @@ export default function ProductForm({
       description: existingDescription || "",
       price: existingPrice || "",
       images: existingImages || [],
+      category: existingCategory || "",
     });
-  }, [existingTitle, existingDescription, existingPrice, existingImages]);
+  }, [
+    existingTitle,
+    existingDescription,
+    existingPrice,
+    existingImages,
+    existingCategory,
+  ]);
 
   async function handleImageDelete(imageUrl) {
     const imageKey = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
@@ -63,16 +74,14 @@ export default function ProductForm({
     if (!isFormModified) {
       return;
     }
-
     setisLoading(true);
-
     try {
       // console.log("images updated to before sending", images);
-      const data = { title, description, price, images };
-
+      const data = { title, description, price, images, category };
+      console.log("sending data put", data);
       if (_id) {
         // Update the existing product
-        await axios.put("/api/products/" + _id, data);
+        await axios.put(`/api/products/${_id}`, data);
       } else {
         // Create a new product
         await axios.post("/api/products", data);
@@ -98,14 +107,23 @@ export default function ProductForm({
   };
 
   useEffect(() => {
+    axios.get("/api/categories").then((response) => {
+      setCategories(response.data);
+    });
+  }, []);
+
+  useEffect(() => {
     setIsFormModified(
       title !== initialFormValues.title ||
         description !== initialFormValues.description ||
         price !== initialFormValues.price ||
         images.length !== initialFormValues.images.length ||
-        images.some((image, index) => image !== initialFormValues.images[index])
+        images.some(
+          (image, index) => image !== initialFormValues.images[index]
+        ) ||
+        category !== initialFormValues.category
     );
-  }, [title, description, price, images]);
+  }, [title, description, price, images, category]);
 
   useEffect(() => {
     if (isFormModified) {
@@ -124,6 +142,19 @@ export default function ProductForm({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
+        <label>Category</label>
+        <select
+          value={category}
+          onChange={(event) => setCategory(event.target.value)}
+        >
+          <option value="">Uncategorized</option>
+          {categories.length > 0 &&
+            categories.map((category) => (
+              <option key={category._id} value={category._id}>
+                {category.name}
+              </option>
+            ))}
+        </select>
         <label> Photos</label>
         <div className="mb-2 ">
           <div className="">
@@ -198,7 +229,6 @@ export default function ProductForm({
           }}
         ></UploadButton>
 
-        {console.log("images", images)}
         <label>Description</label>
         <textarea
           placeholder="description"

@@ -9,23 +9,18 @@ export default function Editproduct({ params }) {
   const [product, setProduct] = useState(null);
 
   useEffect(() => {
+    if (!id) {
+      return;
+    }
     axios.get("/api/products/" + id).then((response) => {
       setProduct(response.data);
     });
-  });
+  }, [id]);
   console.log("product", { product });
   return (
     <Container>
       <h1>Edit Product {product?.title}</h1>
-      {product && (
-        <ProductForm
-          _id={product._id}
-          title={product.title}
-          description={product.description}
-          price={product.price}
-          images={product.images}
-        />
-      )}
+      {product && <ProductForm {...product} />}
     </Container>
   );
 }

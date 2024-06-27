@@ -22,6 +22,7 @@
     "next-auth": "^4.24.7",
     "react": "^18",
     "react-dom": "^18",
+    "react-sweetalert2": "^0.6.0",
     "react-toastify": "^10.0.5",
     "uploadthing": "^6.12.0"
   },
