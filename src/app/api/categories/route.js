@@ -18,10 +18,11 @@ export async function GET() {
 export async function POST(req) {
   try {
     await mongooseConnect();
-    const { name, parentCategory } = await req.json();
+    const { name, parentCategory, properties } = await req.json();
     const categoryDoc = await Category.create({
       name,
-      parent: parentCategory,
+      parent: parentCategory || undefined,
+      properties: properties || undefined,
     });
     return NextResponse.json(categoryDoc, { status: 201 });
   } catch (error) {
@@ -35,12 +36,16 @@ export async function POST(req) {
 export async function PUT(req) {
   try {
     await mongooseConnect();
-    const { _id, name, parentCategory } = await req.json();
-    const categoryDoc = await Category.findByIdAndUpdate(
-      _id,
-      { name, parent: parentCategory },
-      { new: true }
-    );
+    const { _id, name, parentCategory, properties } = await req.json();
+    let updateData = { name, properties };
+    if (parentCategory) {
+      updateData.parent = parentCategory;
+    } else {
+      updateData = { ...updateData, $unset: { parent: "" } };
+    }
+    const categoryDoc = await Category.findByIdAndUpdate(_id, updateData, {
+      new: true,
+    });
     return NextResponse.json(categoryDoc, { status: 201 });
   } catch (error) {
     console.error(error);

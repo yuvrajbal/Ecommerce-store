@@ -8,6 +8,7 @@ const ProductSchema = new Schema({
   price: { type: Number, required: true },
   images: [String],
   category: { type: Schema.Types.ObjectId, ref: "Category" },
+  properties: { type: Object },
 });
 
 const Product =

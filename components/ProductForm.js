@@ -14,11 +14,13 @@ export default function ProductForm({
   price: existingPrice,
   images: existingImages,
   category: existingCategory,
+  properties: existingProperties,
 }) {
   const [title, setTitle] = useState(existingTitle || "");
   const [description, setDescription] = useState(existingDescription || "");
   const [price, setPrice] = useState(existingPrice || "");
   const [category, setCategory] = useState(existingCategory || "");
+  const [productProps, setProductProps] = useState(existingProperties || {});
   const [goToProducts, setgoToProducts] = useState(false);
   const [images, setImages] = useState(existingImages || []);
   const [isLoading, setisLoading] = useState(false);
@@ -35,6 +37,7 @@ export default function ProductForm({
     price: existingPrice || "",
     images: existingImages || [],
     category: existingCategory || "",
+    properties: existingProperties || {},
   });
 
   useEffect(() => {
@@ -44,6 +47,7 @@ export default function ProductForm({
       price: existingPrice || "",
       images: existingImages || [],
       category: existingCategory || "",
+      properties: existingProperties || {},
     });
   }, [
     existingTitle,
@@ -51,6 +55,7 @@ export default function ProductForm({
     existingPrice,
     existingImages,
     existingCategory,
+    existingProperties,
   ]);
 
   async function handleImageDelete(imageUrl) {
@@ -76,8 +81,19 @@ export default function ProductForm({
     }
     setisLoading(true);
     try {
-      // console.log("images updated to before sending", images);
-      const data = { title, description, price, images, category };
+      const data = {
+        title,
+        description,
+        price,
+        images,
+        properties: productProps,
+      };
+      if (category) {
+        data.category = category;
+      } else {
+        data.category = null;
+      }
+
       console.log("sending data put", data);
       if (_id) {
         // Update the existing product
@@ -121,15 +137,43 @@ export default function ProductForm({
         images.some(
           (image, index) => image !== initialFormValues.images[index]
         ) ||
-        category !== initialFormValues.category
+        category !== initialFormValues.category ||
+        JSON.stringify(productProps) !==
+          JSON.stringify(initialFormValues.properties)
     );
-  }, [title, description, price, images, category]);
+  }, [title, description, price, images, category, productProps]);
 
   useEffect(() => {
     if (isFormModified) {
       setsaveStatus("Save");
     }
   }, [isFormModified]);
+
+  function setProductProperties(propertyName, value) {
+    setProductProps((prev) => {
+      const newProperties = { ...prev };
+      newProperties[propertyName] = value;
+      return newProperties;
+    });
+  }
+
+  const propertiesToFill = [];
+  if (categories.length > 0 && category) {
+    let catInfo = categories.find(({ _id }) => _id === category);
+    console.log({ catInfo });
+    if (catInfo?.properties) {
+      propertiesToFill.push(...catInfo.properties);
+    }
+
+    while (catInfo?.parent?._id) {
+      const parentCat = categories.find(
+        ({ _id }) => _id === catInfo.parent._id
+      );
+      propertiesToFill.push(...parentCat.properties);
+      catInfo = parentCat;
+    }
+    // console.log({ selCatInfo });
+  }
 
   return (
     <form onSubmit={createProduct}>
@@ -155,6 +199,23 @@ export default function ProductForm({
               </option>
             ))}
         </select>
+        {propertiesToFill.length > 0 &&
+          propertiesToFill.map((p) => (
+            <div className="flex gap-1">
+              <div>{p.name}</div>
+              <select
+                value={productProps[p.name]}
+                onChange={(e) => setProductProperties(p.name, e.target.value)}
+                className="flex-grow"
+              >
+                {p.values.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
         <label> Photos</label>
         <div className="mb-2 ">
           <div className="">

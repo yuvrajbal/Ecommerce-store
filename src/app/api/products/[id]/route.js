@@ -23,14 +23,25 @@ export async function PUT(req, { params }) {
   try {
     await mongooseConnect();
     const { id } = params;
-    const { title, description, price, images, category } = await req.json();
-    console.log("category");
+    const { title, description, price, images, category, properties } =
+      await req.json();
+    let updateData = {
+      title,
+      description,
+      price,
+      images,
+      category,
+      properties,
+    };
+    // if (category) {
+    //   updateData.category = category;
+    // } else {
+    //   updateData = { ...updateData, $unset: { category: "" } };
+    // }
 
-    const updateProduct = await Product.findByIdAndUpdate(
-      id,
-      { title, description, price, images, category },
-      { new: true }
-    );
+    const updateProduct = await Product.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
 
     if (!updateProduct) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
