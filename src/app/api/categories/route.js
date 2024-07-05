@@ -1,9 +1,17 @@
 import { mongooseConnect } from "../../../../lib/mongoose";
 import { NextResponse } from "next/server";
 import { Category } from "../../../../models/category";
+import { isAdminRequest } from "../../../../lib/options";
 
-export async function GET() {
+export async function GET(req) {
   try {
+    const isAdmin = await isAdminRequest(req);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: "You are not authorized to access this resource" },
+        { status: 403 }
+      );
+    }
     await mongooseConnect();
     const categories = await Category.find().populate("parent");
     return NextResponse.json(categories);

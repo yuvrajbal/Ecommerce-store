@@ -1,9 +1,16 @@
 import { Product } from "../../../../models/product";
 import { mongooseConnect } from "../../../../lib/mongoose";
 import { NextResponse } from "next/server";
-
+import { isAdminRequest } from "../../../../lib/options";
 export async function GET(req) {
   try {
+    const isAdmin = await isAdminRequest(req);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: "You are not authorized to access this resource" },
+        { status: 403 }
+      );
+    }
     await mongooseConnect();
     const products = await Product.find({});
     return NextResponse.json(products);

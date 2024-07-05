@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { mongooseConnect } from "../../../../../lib/mongoose";
 import { Product } from "../../../../../models/product";
-
+import { isAdminRequest } from "../../../../../lib/options";
 export async function GET(req, { params }) {
+  const isAdmin = await isAdminRequest(req);
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: "You are not authorized to access this resource" },
+      { status: 403 }
+    );
+  }
   const { id } = params;
 
   try {
@@ -23,14 +30,14 @@ export async function PUT(req, { params }) {
   try {
     await mongooseConnect();
     const { id } = params;
-    const { title, description, price, images, category, properties } =
+    const { title, description, price, images, categories, properties } =
       await req.json();
     let updateData = {
       title,
       description,
       price,
       images,
-      category,
+      categories,
       properties,
     };
     // if (category) {

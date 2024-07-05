@@ -13,22 +13,22 @@ export default function ProductForm({
   description: existingDescription,
   price: existingPrice,
   images: existingImages,
-  category: existingCategory,
+  categories: existingCategories,
   properties: existingProperties,
 }) {
   const [title, setTitle] = useState(existingTitle || "");
   const [description, setDescription] = useState(existingDescription || "");
   const [price, setPrice] = useState(existingPrice || "");
-  const [category, setCategory] = useState(existingCategory || "");
-  const [productProps, setProductProps] = useState(existingProperties || {});
-  const [goToProducts, setgoToProducts] = useState(false);
-  const [images, setImages] = useState(existingImages || []);
+  const [selectedCategories, setSelectedCategories] = useState(
+    existingCategories || []
+  );
   const [isLoading, setisLoading] = useState(false);
+  const [productProps, setProductProps] = useState(existingProperties || {});
+  const [images, setImages] = useState(existingImages || []);
   const [saveStatus, setsaveStatus] = useState("Save");
   const [isFormModified, setIsFormModified] = useState(false);
-  const [categories, setCategories] = useState([]);
-  const router = useRouter();
-
+  const [allCategories, setAllCategories] = useState([]);
+  console.log();
   const dragControls = useDragControls();
 
   const [initialFormValues, setInitialFormValues] = useState({
@@ -36,7 +36,7 @@ export default function ProductForm({
     description: existingDescription || "",
     price: existingPrice || "",
     images: existingImages || [],
-    category: existingCategory || "",
+    selectedCategories: existingCategories || [],
     properties: existingProperties || {},
   });
 
@@ -46,7 +46,7 @@ export default function ProductForm({
       description: existingDescription || "",
       price: existingPrice || "",
       images: existingImages || [],
-      category: existingCategory || "",
+      selectedCategories: existingCategories || [],
       properties: existingProperties || {},
     });
   }, [
@@ -54,7 +54,7 @@ export default function ProductForm({
     existingDescription,
     existingPrice,
     existingImages,
-    existingCategory,
+    existingCategories,
     existingProperties,
   ]);
 
@@ -76,9 +76,9 @@ export default function ProductForm({
 
   async function createProduct(event) {
     event.preventDefault();
-    if (!isFormModified) {
-      return;
-    }
+    // if (!isFormModified) {
+    //   return;
+    // }
     setisLoading(true);
     try {
       const data = {
@@ -88,10 +88,10 @@ export default function ProductForm({
         images,
         properties: productProps,
       };
-      if (category) {
-        data.category = category;
+      if (selectedCategories.length > 0) {
+        data.categories = selectedCategories;
       } else {
-        data.category = null;
+        data.categories = [];
       }
 
       console.log("sending data put", data);
@@ -115,6 +115,7 @@ export default function ProductForm({
       });
     } finally {
       setisLoading(false);
+      // router.push("/products");
     }
   }
 
@@ -124,7 +125,7 @@ export default function ProductForm({
 
   useEffect(() => {
     axios.get("/api/categories").then((response) => {
-      setCategories(response.data);
+      setAllCategories(response.data);
     });
   }, []);
 
@@ -137,11 +138,11 @@ export default function ProductForm({
         images.some(
           (image, index) => image !== initialFormValues.images[index]
         ) ||
-        category !== initialFormValues.category ||
+        selectedCategories !== initialFormValues.selectedCategories ||
         JSON.stringify(productProps) !==
           JSON.stringify(initialFormValues.properties)
     );
-  }, [title, description, price, images, category, productProps]);
+  }, [title, description, price, images, selectedCategories, productProps]);
 
   useEffect(() => {
     if (isFormModified) {
@@ -149,6 +150,20 @@ export default function ProductForm({
     }
   }, [isFormModified]);
 
+  function handleCategoryChange(value, index) {
+    const newCategories = [...selectedCategories];
+    newCategories[index] = value;
+    setSelectedCategories(newCategories);
+  }
+
+  function handleRemoveCategory(index) {
+    const newCategories = selectedCategories.filter((_, i) => i !== index);
+    setSelectedCategories(newCategories);
+  }
+
+  function handleAddCategory() {
+    setSelectedCategories([...selectedCategories, ""]);
+  }
   function setProductProperties(propertyName, value) {
     setProductProps((prev) => {
       const newProperties = { ...prev };
@@ -158,21 +173,17 @@ export default function ProductForm({
   }
 
   const propertiesToFill = [];
-  if (categories.length > 0 && category) {
-    let catInfo = categories.find(({ _id }) => _id === category);
-    console.log({ catInfo });
-    if (catInfo?.properties) {
-      propertiesToFill.push(...catInfo.properties);
-    }
-
-    while (catInfo?.parent?._id) {
-      const parentCat = categories.find(
-        ({ _id }) => _id === catInfo.parent._id
-      );
-      propertiesToFill.push(...parentCat.properties);
-      catInfo = parentCat;
-    }
-    // console.log({ selCatInfo });
+  if (selectedCategories.length > 0) {
+    console.log({ selectedCategories });
+    selectedCategories.forEach((categoryId) => {
+      // console.log({ category });
+      let category = allCategories.find(({ _id }) => _id === categoryId);
+      console.log("category properties", category?.properties);
+      if (category?.properties) {
+        propertiesToFill.push(...category.properties);
+        console.log({ propertiesToFill });
+      }
+    });
   }
 
   return (
@@ -187,7 +198,53 @@ export default function ProductForm({
           onChange={(e) => setTitle(e.target.value)}
         />
         <label>Category</label>
-        <select
+        {selectedCategories.map((category, index) => (
+          <div key={index} className="flex gap-1 mt-2">
+            <select
+              value={category}
+              className="mb-0"
+              onChange={(e) => handleCategoryChange(e.target.value, index)}
+            >
+              <option value="">Select Category</option>
+              {allCategories.length > 0 &&
+                allCategories.map((category) => (
+                  <option key={category._id} value={category._id}>
+                    {category.name}
+                  </option>
+                ))}
+            </select>
+            <button
+              type="button"
+              className="btn-red flex gap-1 items-center"
+              onClick={() => handleRemoveCategory(index)}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="size-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+                />
+              </svg>
+              Remove
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="btn-default mt-2"
+          onClick={handleAddCategory}
+        >
+          Add a new Category
+        </button>
+
+        {/* <select
           value={category}
           onChange={(event) => setCategory(event.target.value)}
         >
@@ -198,22 +255,25 @@ export default function ProductForm({
                 {category.name}
               </option>
             ))}
-        </select>
+        </select> */}
+
         {propertiesToFill.length > 0 &&
           propertiesToFill.map((p) => (
-            <div className="flex gap-1">
-              <div>{p.name}</div>
-              <select
-                value={productProps[p.name]}
-                onChange={(e) => setProductProperties(p.name, e.target.value)}
-                className="flex-grow"
-              >
-                {p.values.map((v) => (
-                  <option key={v} value={v}>
-                    {v}
-                  </option>
-                ))}
-              </select>
+            <div className="">
+              <label>{p.name[0].toUpperCase() + p.name.substring(1)}</label>
+              <div>
+                <select
+                  value={productProps[p.name]}
+                  onChange={(e) => setProductProperties(p.name, e.target.value)}
+                  className="flex-grow"
+                >
+                  {p.values.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           ))}
         <label> Photos</label>
@@ -223,7 +283,7 @@ export default function ProductForm({
               axis="x"
               values={images}
               onReorder={setImages}
-              className="flex flex-row gap-1"
+              className="flex flex-row gap-3"
               as="ul"
             >
               {images && images.length > 0 ? (
@@ -232,22 +292,22 @@ export default function ProductForm({
                     key={image}
                     value={image}
                     dragControls={dragControls}
-                    className="max-w-fit"
+                    className="max-w-fit shadow-sm rounded-sm border border-gray-200 bg-white"
                   >
                     <div
-                      className="relative h-24 mb-4  cursor-grab"
+                      className="relative h-24 mb-2 cursor-grab "
                       onPointerDown={(e) => startDrag(e)}
                     >
                       <img
                         key={index}
                         src={image.url || image}
                         alt="product image"
-                        className="object-cover rounded-2xl mt-3  mr-2 pointer-events-none text-sm"
+                        className="object-cover rounded-2xl mt-3   pointer-events-none text-sm"
                       />
-                      <h1>{image.url}</h1>
+
                       <button
                         type="button"
-                        className="absolute top-0 right-0 bg-red-400 text-white rounded-full p-0.2 size-6"
+                        className="absolute -top-5 -right-2 bg-red-400 text-white rounded-full "
                         onClick={() => handleImageDelete(image.url || image)}
                       >
                         <svg
@@ -256,7 +316,7 @@ export default function ProductForm({
                           viewBox="0 0 24 24"
                           strokeWidth={1.5}
                           stroke="currentColor"
-                          className="size-6"
+                          className="size-4"
                         >
                           <path
                             strokeLinecap="round"
@@ -277,7 +337,7 @@ export default function ProductForm({
 
         <UploadButton
           endpoint="imageUploader"
-          className="mt-6 ut-button:bg-blue-900"
+          className="mt-2 ut-button:bg-white ut-button:text-primary ut-button:border ut-button:border-primary ut-button:shadow-md"
           onClientUploadComplete={(res) => {
             const newImageURLs = res.map((file) => file.url);
             setImages([...images, ...newImageURLs]);
