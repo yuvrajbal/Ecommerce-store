@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { mongooseConnect } from "../../../../../lib/mongoose";
 import { Product } from "../../../../../models/product";
 import { isAdminRequest } from "../../../../../lib/options";
+
 export async function GET(req, { params }) {
   const isAdmin = await isAdminRequest(req);
   if (!isAdmin) {
@@ -30,11 +31,29 @@ export async function PUT(req, { params }) {
   try {
     await mongooseConnect();
     const { id } = params;
-    const { title, description, price, images, categories, properties } =
-      await req.json();
+    // get product details from the request body
+    const {
+      title,
+      description,
+      overview,
+      keyBenefits,
+      suggestedUse,
+      ingredients,
+      warnings,
+      price,
+      images,
+      categories,
+      properties,
+    } = await req.json();
+
     let updateData = {
       title,
       description,
+      overview,
+      keyBenefits,
+      suggestedUse,
+      ingredients,
+      warnings,
       price,
       images,
       categories,

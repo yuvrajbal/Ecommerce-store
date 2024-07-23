@@ -6,6 +6,7 @@ import { UploadButton } from "./uploadthing";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { DragControls, Reorder, useDragControls } from "framer-motion";
+import { set } from "mongoose";
 
 export default function ProductForm({
   _id,
@@ -15,9 +16,19 @@ export default function ProductForm({
   images: existingImages,
   categories: existingCategories,
   properties: existingProperties,
+  overview: existingOverview,
+  keyBenefits: existingKeyBenefits,
+  suggestedUse: existingSuggestedUse,
+  ingredients: existingIngredients,
+  warnings: existingWarnings,
 }) {
   const [title, setTitle] = useState(existingTitle || "");
   const [description, setDescription] = useState(existingDescription || "");
+  const [overview, setOverview] = useState(existingOverview || "");
+  const [keyBenefits, setKeyBenefits] = useState(existingKeyBenefits || []);
+  const [suggestedUse, setSuggestedUse] = useState(existingSuggestedUse || "");
+  const [ingredients, setIngredients] = useState(existingIngredients || "");
+  const [warnings, setWarnings] = useState(existingWarnings || "");
   const [price, setPrice] = useState(existingPrice || "");
   const [selectedCategories, setSelectedCategories] = useState(
     existingCategories || []
@@ -28,12 +39,17 @@ export default function ProductForm({
   const [saveStatus, setsaveStatus] = useState("Save");
   const [isFormModified, setIsFormModified] = useState(false);
   const [allCategories, setAllCategories] = useState([]);
-  console.log();
+  // console.log();
   const dragControls = useDragControls();
 
   const [initialFormValues, setInitialFormValues] = useState({
     title: existingTitle || "",
     description: existingDescription || "",
+    overview: existingOverview || "",
+    keyBenefits: existingKeyBenefits || [],
+    suggestedUse: existingSuggestedUse || "",
+    ingredients: existingIngredients || "",
+    warnings: existingWarnings || "",
     price: existingPrice || "",
     images: existingImages || [],
     selectedCategories: existingCategories || [],
@@ -44,6 +60,11 @@ export default function ProductForm({
     setInitialFormValues({
       title: existingTitle || "",
       description: existingDescription || "",
+      overview: existingOverview || "",
+      keyBenefits: existingKeyBenefits || [],
+      suggestedUse: existingSuggestedUse || "",
+      ingredients: existingIngredients || "",
+      warnings: existingWarnings || "",
       price: existingPrice || "",
       images: existingImages || [],
       selectedCategories: existingCategories || [],
@@ -52,11 +73,54 @@ export default function ProductForm({
   }, [
     existingTitle,
     existingDescription,
+    existingOverview,
+    existingKeyBenefits,
+    existingSuggestedUse,
+    existingIngredients,
+    existingWarnings,
     existingPrice,
     existingImages,
     existingCategories,
     existingProperties,
   ]);
+
+  useEffect(() => {
+    setIsFormModified(
+      title !== initialFormValues.title ||
+        description !== initialFormValues.description ||
+        price !== initialFormValues.price ||
+        images.length !== initialFormValues.images.length ||
+        images.some(
+          (image, index) => image !== initialFormValues.images[index]
+        ) ||
+        selectedCategories !== initialFormValues.selectedCategories ||
+        JSON.stringify(productProps) !==
+          JSON.stringify(initialFormValues.properties) ||
+        overview !== initialFormValues.overview ||
+        keyBenefits !== initialFormValues.keyBenefits ||
+        suggestedUse !== initialFormValues.suggestedUse ||
+        ingredients !== initialFormValues.ingredients ||
+        warnings !== initialFormValues.warnings
+    );
+  }, [
+    title,
+    description,
+    overview,
+    keyBenefits,
+    suggestedUse,
+    ingredients,
+    warnings,
+    price,
+    images,
+    selectedCategories,
+    productProps,
+  ]);
+
+  useEffect(() => {
+    if (isFormModified) {
+      setsaveStatus("Save");
+    }
+  }, [isFormModified]);
 
   async function handleImageDelete(imageUrl) {
     const imageKey = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
@@ -84,6 +148,11 @@ export default function ProductForm({
       const data = {
         title,
         description,
+        overview,
+        keyBenefits,
+        suggestedUse,
+        ingredients,
+        warnings,
         price,
         images,
         properties: productProps,
@@ -96,7 +165,8 @@ export default function ProductForm({
 
       console.log("sending data put", data);
       if (_id) {
-        // Update the existing product
+        // Update the existing
+
         await axios.put(`/api/products/${_id}`, data);
       } else {
         // Create a new product
@@ -129,27 +199,6 @@ export default function ProductForm({
     });
   }, []);
 
-  useEffect(() => {
-    setIsFormModified(
-      title !== initialFormValues.title ||
-        description !== initialFormValues.description ||
-        price !== initialFormValues.price ||
-        images.length !== initialFormValues.images.length ||
-        images.some(
-          (image, index) => image !== initialFormValues.images[index]
-        ) ||
-        selectedCategories !== initialFormValues.selectedCategories ||
-        JSON.stringify(productProps) !==
-          JSON.stringify(initialFormValues.properties)
-    );
-  }, [title, description, price, images, selectedCategories, productProps]);
-
-  useEffect(() => {
-    if (isFormModified) {
-      setsaveStatus("Save");
-    }
-  }, [isFormModified]);
-
   function handleCategoryChange(value, index) {
     const newCategories = [...selectedCategories];
     newCategories[index] = value;
@@ -170,6 +219,21 @@ export default function ProductForm({
       newProperties[propertyName] = value;
       return newProperties;
     });
+  }
+
+  function handleAddBenefit() {
+    setKeyBenefits([...keyBenefits, ""]);
+  }
+
+  function handleRemoveBenefit(index) {
+    const newBenefits = keyBenefits.filter((_, i) => i !== index);
+    setKeyBenefits(newBenefits);
+  }
+
+  function handleBenefitChange(index, value) {
+    const newBenefits = [...keyBenefits];
+    newBenefits[index] = value;
+    setKeyBenefits(newBenefits);
   }
 
   const propertiesToFill = [];
@@ -243,19 +307,6 @@ export default function ProductForm({
         >
           Add a new Category
         </button>
-
-        {/* <select
-          value={category}
-          onChange={(event) => setCategory(event.target.value)}
-        >
-          <option value="">Uncategorized</option>
-          {categories.length > 0 &&
-            categories.map((category) => (
-              <option key={category._id} value={category._id}>
-                {category.name}
-              </option>
-            ))}
-        </select> */}
 
         {propertiesToFill.length > 0 &&
           propertiesToFill.map((p) => (
@@ -350,13 +401,72 @@ export default function ProductForm({
           }}
         ></UploadButton>
 
+        {/* Short Description */}
         <label>Description</label>
         <textarea
           placeholder="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-        <label>Price </label>
+
+        {/* Overview of product */}
+        <label>Overview</label>
+        <textarea
+          placeholder="Product Overview"
+          value={overview}
+          onChange={(e) => setOverview(e.target.value)}
+        />
+
+        {/*  List of key benefits */}
+        <label>Key Benefits</label>
+        {keyBenefits.map((benefit, index) => (
+          <div key={index} className="flex gap-1 mt-2">
+            <input
+              type="text"
+              value={benefit}
+              onChange={(e) => handleBenefitChange(index, e.target.value)}
+              placeholder={`Benefit ${index + 1}`}
+              className="mb-0"
+            />
+            <button
+              type="button"
+              onClick={() => handleRemoveBenefit(index)}
+              className="btn-red"
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={handleAddBenefit}
+          className="btn-default mt-2 mb-2"
+        >
+          Add Benefit
+        </button>
+
+        {/* Suggested Use */}
+        <label>Suggested Use</label>
+        <textarea
+          placeholder="Suggested Use"
+          value={suggestedUse}
+          onChange={(e) => setSuggestedUse(e.target.value)}
+        />
+        <label>Ingredients</label>
+
+        <textarea
+          placeholder="Ingredients"
+          value={ingredients}
+          onChange={(e) => setIngredients(e.target.value)}
+        />
+        <label>Warnings</label>
+        <textarea
+          placeholder="Warnings"
+          value={warnings}
+          onChange={(e) => setWarnings(e.target.value)}
+        />
+
+        <label>Starting Price </label>
         <input
           type="text"
           placeholder="price"

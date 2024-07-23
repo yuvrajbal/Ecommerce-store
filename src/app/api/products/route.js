@@ -30,22 +30,33 @@ export async function POST(req) {
     await mongooseConnect();
 
     // Parse the request body
-    const { title, description, price, images, category, properties } =
-      await req.json();
+    const {
+      title,
+      description,
+      overview,
+      keyBenefits,
+      suggestedUse,
+      ingredients,
+      warnings,
+      price,
+      images,
+      category,
+      properties,
+    } = await req.json();
     let createdProd = {
       title,
       description,
+      overview,
+      keyBenefits,
+      suggestedUse,
+      ingredients,
+      warnings,
       price,
       images,
       category,
       properties,
     };
-    // if (category) {
-    //   createdProd.category = category;
-    // }
-    // else {
-    //   createdProd = { ...createdProd, $unset: { category: "" } };
-    // }
+
     // Create a new product document in the database
     const productDoc = await Product.create(createdProd);
 
