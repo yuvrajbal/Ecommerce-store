@@ -15,6 +15,7 @@ const ProductSchema = new Schema(
     images: [String],
     categories: [{ type: Schema.Types.ObjectId, ref: "Category" }],
     properties: { type: Object },
+    categoryProperties: [{ type: Object }],
   },
   { timestamps: true }
 );

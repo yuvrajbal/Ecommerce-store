@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { mongooseConnect } from "../../../../../lib/mongoose";
 import { Product } from "../../../../../models/product";
 import { isAdminRequest } from "../../../../../lib/options";
-
+import { Category } from "../../../../../models/category";
 export async function GET(req, { params }) {
   const isAdmin = await isAdminRequest(req);
   if (!isAdmin) {
@@ -59,11 +59,12 @@ export async function PUT(req, { params }) {
       categories,
       properties,
     };
-    // if (category) {
-    //   updateData.category = category;
-    // } else {
-    //   updateData = { ...updateData, $unset: { category: "" } };
-    // }
+
+    const categoryValues = await Category.find({ _id: { $in: categories } });
+    const categoryProperties = categoryValues.map(
+      (category) => category.properties
+    );
+    updateData.categoryProperties = categoryProperties;
 
     const updateProduct = await Product.findByIdAndUpdate(id, updateData, {
       new: true,
